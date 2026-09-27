@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR西日本 おでかけシミュレーション</title>
+    <style>
+        :root {
+            --jr-blue: #0072bc;
+            --jr-green: #00a651;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 700px;
+            margin: 20px;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--jr-blue);
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--jr-blue);
+            margin: 0 0 5px 0;
+        }
+
+        #step-indicator {
+            font-size: 1rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .stage {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        /* --- 実写背景コンテナ --- */
+        .realistic-img-container {
+            position: relative;
+            width: 100%;
+            max-width: 550px;
+            margin: 0 auto 15px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: 3px solid #334155;
+            background-color: #1e293b;
+        }
+
+        .realistic-img-container img {
+            width: 100%;
+            display: block;
+            filter: brightness(0.65); /* パネルを目立たせるために背景を少し暗くする */
+            object-fit: cover;
+            height: 300px;
+        }
+
+        .overlay-ui {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #475569;
+        }
+
+        /* リアルな券売機UI */
+        .machine-panel {
+            background: #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .screen-header {
+            font-size: 0.9rem;
+            color: #1e293b;
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 2px solid var(--jr-blue);
+            padding-bottom: 3px;
+        }
+
+        .machine-msg {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #d97706;
+            margin-bottom: 10px;
+            background: #fef3c7;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #fcd34d;
+        }
+
+        .fare-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .disabled-area {
+            opacity: 0.4;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .dest-btn {
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            padding: 10px 2px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #0f172a;
+            transition: 0.2s;
+        }
+
+        .dest-btn:hover {
+            background: #e0f2fe;
+            border-color: var(--jr-blue);
+        }
+
+        .machine-bottom {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .coin-insert-box, .ticket-slot-area {
+            background: #334155;
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            color: white;
+            border: 2px solid #475569;
+        }
+
+        .coin-insert-box p {
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+        }
+
+        .coin-btn {
+            background: #fbbf24;
+            color: #713f12;
+            border: none;
+            padding: 6px 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 2px;
+            box-shadow: 0 2px 0 #d97706;
+        }
+
+        .coin-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .ticket-outlet {
+            width: 100%;
+            min-height: 40px;
+            background: #0f172a;
+            border: 2px dashed #94a3b8;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .ticket-piece {
+            background: #fef08a;
+            color: #713f12;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            animation: slideOutTicket 0.5s ease-out forwards;
+            font-size: 0.85rem;
+        }
+
+        @keyframes slideOutTicket {
+            0% { transform: translateY(-15px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* --- 自動改札機UI --- */
+        .display-panel {
+            background: #0f172a;
+            color: #fbbf24;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            border: 2px solid #475569;
+            text-align: center;
+        }
+
+        .gate-slot-real {
+            background: #475569;
+            border: 2px dashed #94a3b8;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .gate-slot-real:hover { background: #64748b; }
+
+        .take-slot-real {
+            background: #1e3a8a;
+            border: 2px solid #60a5fa;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .flap-barriers {
+            height: 30px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+
+        .flap {
+            width: 48%;
+            height: 8px;
+            background: #ef4444;
+            position: absolute;
+            top: 11px;
+            transition: transform 0.4s ease;
+        }
+
+        .left-flap { left: 2%; transform-origin: left center; }
+        .right-flap { right: 2%; transform-origin: right center; }
+
+        .gate-open .left-flap { transform: rotate(-75deg); background: var(--jr-green); }
+        .gate-open .right-flap { transform: rotate(75deg); background: var(--jr-green); }
+
+        /* --- 電車アニメーション --- */
+        .platform-scene {
+            background: #cbd5e1;
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #94a3b8;
+        }
+
+        .train-arriving {
+            width: 80%;
+            height: 120px;
+            background: #f8fafc;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 4px solid #64748b;
+            border-bottom: 12px solid var(--jr-blue); /* JRっぽいライン */
+        }
+
+        .train-windows {
+            display: flex;
+            gap: 15px;
+            position: absolute;
+            top: 20px;
+        }
+
+        .window {
+            width: 45px;
+            height: 35px;
+            background: #38bdf8;
+            border-radius: 6px;
+            border: 2px solid #0f172a;
+        }
+
+        .doors {
+            width: 65px;
+            height: 85px;
+            position: absolute;
+            bottom: 0;
+            display: flex;
+            background: #334155;
+            overflow: hidden;
+            transition: transform 0.6s ease;
+        }
+
+        .door {
+            width: 50%;
+            height: 100%;
+            background: #cbd5e1;
+            border: 1px solid #64748b;
+            transition: transform 0.6s ease;
+        }
+
+        .doors.open .left-door { transform: translateX(-95%); }
+        .doors.open .right-door { transform: translateX(95%); }
+
+        /* --- 電車内（座るアニメ） --- */
+        .train-inside-scene {
+            background: #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+            border: 3px solid #94a3b8;
+        }
+
+        .train-seat {
+            background: #0284c7;
+            width: 90%;
+            height: 90px;
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding-bottom: 10px;
+            position: relative;
+            border-top: 8px solid #0369a1;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            margin-top: 40px;
+        }
+
+        .passenger {
+            font-size: 3.5rem;
+            animation: sitBounce 1.5s ease-in-out infinite alternate;
+            margin-bottom: -10px;
+        }
+
+        @keyframes sitBounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-5px); }
+        }
+
+        .train-window-view {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            gap: 20px;
+            width: 80%;
+            justify-content: center;
+        }
+
+        .scenery-window {
+            width: 110px;
+            height: 50px;
+            background: linear-gradient(to bottom, #7dd3fc, #bae6fd);
+            border: 4px solid #cbd5e1;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .scenery-tree {
+            position: absolute;
+            bottom: 2px;
+            font-size: 1.2rem;
+            animation: moveScenery 2.5s linear infinite;
+        }
+
+        @keyframes moveScenery {
+            0% { transform: translateX(110px); }
+            100% { transform: translateX(-30px); }
+        }
+
+        /* 共通アクションボタン */
+        .action-btn {
+            background-color: var(--jr-blue);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+
+        .action-btn:hover { background-color: #005691; }
+
+        .clear-card {
+            background: #f0fff4;
+            border: 3px solid var(--jr-green);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .clear-card h2 { color: var(--jr-green); font-size: 2rem; margin-top: 0;}
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 500px) {
+            .fare-grid { grid-template-columns: repeat(3, 1fr); }
+            .realistic-img-container img { height: 350px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>JR西日本 でんしゃにのろう！</h1>
+            <div id="step-indicator">ステップ 1 / 5 : きっぷをかおう</div>
+        </header>
+
+        <main>
+            <!-- ステップ1: リアルな実写券売機 -->
+            <section id="stage-1" class="stage">
+                <h2>きっぷうりば（自動券売機）</h2>
+                
+                <div class="realistic-img-container">
+                    <!-- 駅の券売機エリアをイメージした実写背景画像 -->
+                    <img src="https://images.unsplash.com/photo-1544413660-299165566b1d?auto=format&fit=crop&w=800&q=80" alt="実写の駅の券売機エリア">
+                    
+                    <div class="overlay-ui">
+                        <div class="machine-panel">
+                            <div class="screen-header">きっぷをお買い求めください</div>
+                            <div id="machine-instruction" class="machine-msg">まず、お金を入れてください（現在: <span id="inserted-money">0</span>円）</div>
+                            
+                            <div id="fare-buttons-area" class="fare-grid disabled-area">
+                                <button class="dest-btn" onclick="selectFare(190)">190円</button>
+                                <button class="dest-btn" onclick="selectFare(240)">240円</button>
+                                <button class="dest-btn" onclick="selectFare(330)">330円</button>
+                                <button class="dest-btn" onclick="selectFare(510)">510円</button>
+                                <button class="dest-btn" onclick="selectFare(590)">590円</button>
+                                <button class="dest-btn" onclick="selectFare(680)">680円</button>
+                                <button class="dest-btn" onclick="selectFare(770)">770円</button>
+                                <button class="dest-btn" onclick="selectFare(990)">990円</button>
+                                <button class="dest-btn" onclick="selectFare(1200)">1,200円</button>
+                                <button class="dest-btn" onclick="selectFare(1450)">1,450円</button>
+                                <button class="dest-btn" onclick="selectFare(1700)">1,700円</button>
+                                <button class="dest-btn" onclick="selectFare(2000)">2,000円</button>
+                            </div>
+                        </div>
+
+                        <div class="machine-bottom">
+                            <div class="coin-insert-box">
+                                <p>お金をいれる</p>
+                                <button class="coin-btn" onclick="insertMoney(100)">100円</button>
+                                <button class="coin-btn" onclick="insertMoney(500)">500円</button>
+                                <button class="coin-btn" onclick="insertMoney(1000)">1000円札</button>
+                            </div>
+                            <div class="ticket-slot-area">
+                                <p style="margin: 0 0 5px 0; font-size: 0.85rem;">きっぷ・おつり</p>
+                                <div id="ticket-slot-outlet" class="ticket-outlet">
+                                    <div id="dispensed-ticket" class="ticket-piece hidden" onclick="takeTicket()">
+                                        🎫 きっぷ (<span id="ticket-val-text">0</span>円) <br><small>【タッチして取る】</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ステップ2: 入口自動改札（実写背景） -->
+            <section id="stage-2" class="stage hidden">
+                <h2>のりばの かいさつ（入口）</h2>
+                <p>きっぷを自動改札機に通して進みましょう</p>
+                
+                <div id="entry-gate-wrapper" class="realistic-img-container">
+                    <!-- 日本の駅の自動改札機の実写画像 -->
+                    <img src="https://images.unsplash.com/photo-1528458909336-e7a0adfed0a5?auto=format&fit=crop&w=800&q=80" alt="自動改札機の実写">
+                    
+                    <div class="overlay-ui" style="width: 75%;">
+                        <div class="display-panel" id="entry-display">きっぷを入れてください</div>
+                        
+                        <div class="gate-slot-real" id="entry-slot" onclick="insertTicketToEntryGate()">
+                            <span>📥 きっぷ投入口</span>
+                        </div>
+                        
+                        <div class="flap-barriers" id="entry-flaps">
+                            <div class="flap left-flap"></div>
+                            <div class="flap right-flap"></div>
+                        </div>
+                        
+                        <div class="take-slot-real" id="entry-take-slot" onclick="takeTicketFromEntryGate()" style="display: none;">
+                            <span>📤 取出口（タッチして取る）</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ステップ3: 電車到着・乗車後、座席に座るアニメーション -->
+            <section id="stage-3" class="stage hidden">
+                <h2>ホーム と 電車</h2>
+                
+                <!-- ホーム画面 -->
+                <div id="platform-view">
+                    <p id="platform-msg">電車がホームに入ってきます...</p>
+                    <div class="platform-scene">
+                        <div id="train-obj" class="train-arriving">
+                            <div class="train-windows">
+                                <div class="window"></div><div class="window"></div><div class="window"></div>
+                            </div>
+                            <div id="train-doors" class="doors">
+                                <div class="door left-door"></div>
+                                <div class="door right-door"></div>
+                            </div>
+                        </div>
+                        <button id="board-btn" class="action-btn hidden" onclick="boardTrain()">電車に乗る</button>
+                    </div>
+                </div>
+
+                <!-- 車内（座る）画面 -->
+                <div id="inside-view" class="hidden">
+                    <p>電車に乗りました。席に座って出発を待ちます。</p>
+                    <div class="train-inside-scene">
+                        <div class="train-window-view">
+                            <div class="scenery-window"><div class="scenery-tree">🌲</div></div>
+                            <div class="scenery-window"><div class="scenery-tree" style="animation-delay: 1.5s;">🏠</div></div>
+                            <div class="scenery-window"><div class="scenery-tree" style="animation-delay: 0.8s;">🏢</div></div>
+                        </div>
+                        <div class="train-seat">
+                            <span class="passenger">🧍‍♂️</span>
+                            <span class="passenger">🧍‍♀️</span>
+                            <span class="passenger">🧎‍♂️</span>
+                        </div>
+                        <button class="action-btn" onclick="arriveDestinationTrigger()">つぎの駅へ進む</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ステップ4: 下車 -->
+            <section id="stage-4" class="stage hidden">
+                <h2>目的地に到着</h2>
+                <p id="arrival-msg">まもなく到着します...</p>
+                <div class="platform-scene">
+                    <div class="train-arriving docked">
+                        <div class="train-windows">
+                            <div class="window"></div><div class="window"></div><div class="window"></div>
+                        </div>
+                        <div id="arrival-doors" class="doors">
+                            <div class="door left-door"></div>
+                            <div class="door right-door"></div>
+                        </div>
+                    </div>
+                    <button id="getoff-btn" class="action-btn hidden" onclick="getOffTrain()">ホームに降りる</button>
+                </div>
+            </section>
+
+            <!-- ステップ5: 出口自動改札（実写背景） -->
+            <section id="stage-5" class="stage hidden">
+                <h2>おりぐちの かいさつ（出口）</h2>
+                <p>きっぷを自動改札機にいれて外に出よう！（回収されます）</p>
+                
+                <div id="exit-gate-wrapper" class="realistic-img-container">
+                    <!-- 出口側の改札機実写画像 -->
+                    <img src="https://images.unsplash.com/photo-1528458909336-e7a0adfed0a5?auto=format&fit=crop&w=800&q=80" alt="出口改札機の実写">
+                    
+                    <div class="overlay-ui" style="width: 75%;">
+                        <div class="display-panel" id="exit-display">きっぷを入れてください</div>
+                        
+                        <div class="gate-slot-real" id="exit-slot" onclick="insertTicketToExitGate()">
+                            <span>📥 きっぷ投入口（回収）</span>
+                        </div>
+                        
+                        <div class="flap-barriers" id="exit-flaps">
+                            <div class="flap left-flap"></div>
+                            <div class="flap right-flap"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- クリア画面 -->
+            <section id="stage-clear" class="stage hidden">
+                <div class="clear-card">
+                    <h2>🎉 おめでとうございます！</h2>
+                    <p>無事に目的地まで移動できました！</p>
+                    <button class="action-btn" onclick="resetApp()">もういちど練習する</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let insertedAmount = 0;
+        let selectedFare = 0;
+        let hasTicket = false;
+
+        const stepIndicator = document.getElementById("step-indicator");
+
+        function updateStepIndicator() {
+            const titles = [
+                "ステップ 1 / 5 : きっぷをかおう",
+                "ステップ 2 / 5 : 改札を入ろう",
+                "ステップ 3 / 5 : 電車に乗ろう",
+                "ステップ 4 / 5 : 電車を降りよう",
+                "ステップ 5 / 5 : 改札を出よう"
+            ];
+            // バグ対策: stepが1〜5の間だけ更新
+            if (currentStep >= 1 && currentStep <= 5) {
+                stepIndicator.textContent = titles[currentStep - 1];
+            } else {
+                stepIndicator.textContent = "ゴール！";
+            }
+        }
+
+        function showStage(stageNum) {
+            // 全てのステージを非表示
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`stage-${i}`).classList.add("hidden");
+            }
+            document.getElementById("stage-clear").classList.add("hidden");
+
+            // 指定したステージを表示
+            if (stageNum <= 5) {
+                document.getElementById(`stage-${stageNum}`).classList.remove("hidden");
+            } else {
+                document.getElementById("stage-clear").classList.remove("hidden");
+            }
+            
+            currentStep = stageNum;
+            updateStepIndicator();
+
+            // アニメーションのトリガー
+            if (stageNum === 3) {
+                startTrainArrivalAnimation();
+            }
+            if (stageNum === 4) {
+                startTrainDestinationAnimation();
+            }
+        }
+
+        // --- ステップ1: 券売機ロジック ---
+        function insertMoney(amount) {
+            insertedAmount += amount;
+            document.getElementById("inserted-money").textContent = insertedAmount;
+            document.getElementById("machine-instruction").textContent = "金額ボタンを押してください";
+            document.getElementById("fare-buttons-area").classList.remove("disabled-area");
+        }
+
+        function selectFare(price) {
+            if (insertedAmount < price) {
+                alert("お金が足りません！もっとお金を入れてください。");
+                return;
+            }
+            selectedFare = price;
+            const change = insertedAmount - price;
+            document.getElementById("machine-instruction").textContent = `発券中...（おつり: ${change}円）`;
+            
+            document.getElementById("fare-buttons-area").classList.add("disabled-area");
+
+            setTimeout(() => {
+                const outlet = document.getElementById("ticket-slot-outlet");
+                outlet.innerHTML = `
+                    <div id="dispensed-ticket" class="ticket-piece" onclick="takeTicket()">
+                        🎫 きっぷ (${price}円) <br><small>【タッチ】</small>
+                    </div>
+                `;
+                document.getElementById("machine-instruction").textContent = "きっぷをお取りください";
+            }, 800);
+        }
+
+        function takeTicket() {
+            hasTicket = true;
+            alert("きっぷを取りました！改札へ進みます。");
+            showStage(2);
+        }
+
+        // --- ステップ2: 入口改札ロジック ---
+        function insertTicketToEntryGate() {
+            if (!hasTicket) return;
+            const slot = document.getElementById("entry-slot");
+            slot.innerHTML = "<span>🎫 確認中...</span>";
+            document.getElementById("entry-display").textContent = "お待ちください";
+
+            setTimeout(() => {
+                document.getElementById("entry-gate-wrapper").classList.add("gate-open");
+                document.getElementById("entry-display").textContent = "どうぞお通りください";
+                slot.style.display = "none";
+                document.getElementById("entry-take-slot").style.display = "block";
+            }, 1000);
+        }
+
+        function takeTicketFromEntryGate() {
+            hasTicket = false;
+            alert("切符を取りました。ホームへ向かいます。");
+            showStage(3);
+        }
+
+        // --- ステップ3: 電車乗車・車内アニメーションロジック ---
+        function startTrainArrivalAnimation() {
+            const msg = document.getElementById("platform-msg");
+            const doors = document.getElementById("train-doors");
+            const boardBtn = document.getElementById("board-btn");
+
+            msg.textContent = "電車がホームに到着しました。";
+            
+            setTimeout(() => {
+                msg.textContent = "ドアが開きました。電車に乗りましょう！";
+                doors.classList.add("open");
+                boardBtn.classList.remove("hidden");
+            }, 1500);
+        }
+
+        function boardTrain() {
+            alert("電車に乗りました。車内に移動します。");
+            document.getElementById("platform-view").classList.add("hidden");
+            document.getElementById("inside-view").classList.remove("hidden");
+        }
+
+        function arriveDestinationTrigger() {
+            showStage(4);
+        }
+
+        // --- ステップ4: 下車ロジック ---
+        function startTrainDestinationAnimation() {
+            const msg = document.getElementById("arrival-msg");
+            const doors = document.getElementById("arrival-doors");
+            const getOffBtn = document.getElementById("getoff-btn");
+
+            msg.textContent = "まもなく目的地の駅に到着します...";
+
+            setTimeout(() => {
+                msg.textContent = "到着しました。ドアが開きます。ホームに降りましょう！";
+                doors.classList.add("open");
+                getOffBtn.classList.remove("hidden");
+            }, 1500);
+        }
+
+        function getOffTrain() {
+            alert("ホームに降りました。改札へ向かいます。");
+            showStage(5);
+        }
+
+        // --- ステップ5: 出口改札ロジック ---
+        function insertTicketToExitGate() {
+            const slot = document.getElementById("exit-slot");
+            slot.innerHTML = "<span>📥 回収中...</span>";
+            document.getElementById("exit-display").textContent = "精算完了";
+
+            setTimeout(() => {
+                document.getElementById("exit-gate-wrapper").classList.add("gate-open");
+                slot.innerHTML = "<span>(回収されました)</span>";
+                
+                setTimeout(() => {
+                    showStage(6); // クリア画面へ
+                }, 1200);
+            }, 1000);
+        }
+
+        // --- 修正箇所: ループリセット（もう一度練習する） ---
+        function resetApp() {
+            // 変数リセット
+            insertedAmount = 0;
+            selectedFare = 0;
+            hasTicket = false;
+            
+            // Step 1 リセット
+            document.getElementById("inserted-money").textContent = "0";
+            document.getElementById("machine-instruction").textContent = "まず、お金を入れてください";
+            document.getElementById("fare-buttons-area").classList.add("disabled-area");
+            document.getElementById("ticket-slot-outlet").innerHTML = '<div id="dispensed-ticket" class="ticket-piece hidden" onclick="takeTicket()">🎫 きっぷ (<span id="ticket-val-text">0</span>円) <br><small>【タッチして取る】</small></div>';
+            
+            // Step 2 リセット
+            document.getElementById("entry-gate-wrapper").classList.remove("gate-open");
+            document.getElementById("entry-slot").style.display = "block";
+            document.getElementById("entry-slot").innerHTML = "<span>📥 きっぷ投入口</span>";
+            document.getElementById("entry-take-slot").style.display = "none";
+            document.getElementById("entry-display").textContent = "きっぷを入れてください";
+
+            // Step 3 リセット（前回白画面になっていた原因の解消）
+            document.getElementById("platform-view").classList.remove("hidden");
+            document.getElementById("inside-view").classList.add("hidden");
+            document.getElementById("train-doors").classList.remove("open");
+            document.getElementById("board-btn").classList.add("hidden");
+
+            // Step 4 リセット
+            document.getElementById("arrival-doors").classList.remove("open");
+            document.getElementById("getoff-btn").classList.add("hidden");
+
+            // Step 5 リセット
+            document.getElementById("exit-gate-wrapper").classList.remove("gate-open");
+            document.getElementById("exit-slot").innerHTML = "<span>📥 きっぷ投入口（回収）</span>";
+            document.getElementById("exit-display").textContent = "きっぷを入れてください";
+
+            // 確実にステージ1に戻る
+            showStage(1);
+        }
+    </script>
+</body>
+</html>
