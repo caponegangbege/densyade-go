@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>どっちが重いかな？ 重さ比較クイズ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>どっちが重いかな？</h1>
+            <div id="progress-indicator">第 1 問 / 全 10 問</div>
+        </header>
+
+        <main>
+            <div id="quiz-card">
+                <p id="instruction">下の2つのイラストのうち、**より重い方**をタップしよう！</p>
+                
+                <div class="choices-container">
+                    <!-- 選択肢 1 -->
+                    <button class="choice-btn" id="choice-0" onclick="checkAnswer(0)">
+                        <div class="image-wrapper">
+                            <img id="img-0" src="" alt="選択肢1のイラスト">
+                        </div>
+                        <span id="label-0" class="item-label">読み込み中...</span>
+                    </button>
+
+                    <div class="vs-badge">VS</div>
+
+                    <!-- 選択肢 2 -->
+                    <button class="choice-btn" id="choice-1" onclick="checkAnswer(1)">
+                        <div class="image-wrapper">
+                            <img id="img-1" src="" alt="選択肢2のイラスト">
+                        </div>
+                        <span id="label-1" class="item-label">読み込み中...</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- フィードバック表示エリア -->
+            <div id="feedback-area" class="hidden">
+                <p id="feedback-text"></p>
+                <button id="next-btn" onclick="nextQuestion()">つぎの問題へ</button>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div id="result-area" class="hidden">
+                <h2>おつかれさまでした！</h2>
+                <p id="final-score-text"></p>
+                <button id="restart-btn" onclick="startQuiz()">あたらしい10もん</button>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

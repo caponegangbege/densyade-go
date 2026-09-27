@@ -1,0 +1,222 @@
+:root {
+    --primary-color: #4a90e2;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --bg-color: #f7f9fc;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.app-container {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 700px;
+    margin: 20px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+h1 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+}
+
+#progress-indicator {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    font-weight: bold;
+}
+
+#instruction {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 24px;
+}
+
+.choices-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
+
+.choice-btn {
+    flex: 1;
+    background: #ffffff;
+    border: 3px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    outline: none;
+}
+
+.choice-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(74, 144, 226, 0.15);
+}
+
+.choice-btn:disabled {
+    cursor: default;
+}
+
+.image-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.item-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2d3748;
+}
+
+.vs-badge {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #a0aec0;
+    background: #edf2f7;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* 判定時のスタイル */
+.choice-btn.correct {
+    border-color: var(--success-color);
+    background-color: #f0fff4;
+}
+.choice-btn.correct::after {
+    content: "〇 正解！";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--success-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.choice-btn.incorrect {
+    border-color: var(--danger-color);
+    background-color: #fff5f5;
+}
+.choice-btn.incorrect::after {
+    content: "× ちがうよ";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--danger-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+#feedback-area {
+    margin-top: 25px;
+    text-align: center;
+}
+
+#feedback-text {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+#next-btn, #restart-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+}
+
+#next-btn:hover, #restart-btn:hover {
+    background-color: #357abd;
+}
+
+#result-area {
+    text-align: center;
+}
+
+#result-area h2 {
+    color: #2c3e50;
+    font-size: 2rem;
+}
+
+#final-score-text {
+    font-size: 1.5rem;
+    margin: 20px 0;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* タブレット・スマホ向けの調整 */
+@media (max-width: 600px) {
+    .app-container {
+        padding: 15px;
+        margin: 10px;
+    }
+    .choices-container {
+        flex-direction: column;
+    }
+    .vs-badge {
+        margin: 5px 0;
+    }
+}
